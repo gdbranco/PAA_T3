@@ -15,9 +15,9 @@ void show_prova(int a, int b, int fn, int p, int c,int OK);
 void get_sprova(char* buffer, char *string_p);
 void get_suposicao(char* buffer, int b, int p);
 void get_fato(char* buffer, int a, int b, char* string_fn);
-void get_fator(char* buffer, float fator);
-void do_OMEGA(int OK,int b,char* string_p,char* string_fn);
-void do_O(int OK,int b,char* string_p,char* string_fn);
+void get_fator(frac *_fator,char* buffer, float fator);
+void do_OMEGA(int OK,frac _fator,char* string_residual);
+void do_O(int OK,frac _fator,char* string_residual);
 int mdc(int a, int b);
 frac to_frac(double x, int precision);
 
@@ -49,14 +49,36 @@ frac to_frac(double x, int precision)
     return f;
 }
 
-void do_O(int OK,int b,char *string_p,char* string_fn)
+void do_O(int OK,frac _fator,char *string_residual)
 {
-  
+  if(OK == O || OK==TETA)
+  {
+  	printf("Quando %s >= 0, por exemplo,\n",string_residual);
+  	if(_fator.num == 1)
+  	{
+  		printf("se c >= %d e n >= 1\n",_fator.denom);
+  	}
+  	else
+  	{
+  		printf("se c >= %d/%d e n>=1\n",_fator.denom,_fator.num);
+  	}
+  }
 }
 
-void do_OMEGA(int OK,int b,char *string_p,char *string_fn)
+void do_OMEGA(int OK,frac _fator,char *string_residual)
 {
-  
+  if(OK == OMEGA || OK==TETA)
+  {
+  	printf("Quando %s <= 0, por exemplo,\n",string_residual);
+  	if(_fator.num == 1)
+  	{
+  		printf("se c = %d e n >= 1\n",_fator.denom);
+  	}
+  	else
+  	{
+  		printf("se c = %d/%d e n>=1\n",_fator.denom,_fator.num);
+  	}
+  }
 }
 
 void get_fato(char* buffer, int a, int b, char* string_fn)
@@ -83,32 +105,35 @@ void show_prova(int a, int b, int fn, int p, int c, int OK)
   char string_fn[4];
   char string_p[4];
   char string_fator[10];
+  char string_residual[100];
   float fator = (float)((1/pow(b,p))*a);
+  frac _fator;
   get_polinomio(string_fn,fn);
   get_polinomio(string_p,p);
   get_fato(fato,a,b,string_fn);
   get_suposicao(suposicao,b,p);
   get_sprova(sprova,string_p);
-  get_fator(string_fator,fator);
+  get_fator(&_fator,string_fator,fator);
   printf("Fato : %s\n",fato);
   printf("Suposicao : %s\n",suposicao);
   printf("Preciso provar : %s\n",sprova);
   printf("%s\n",fato);
   printf("     <= %dc(n/%d)^%d + %s\n",a,b,p,string_fn);
   printf("     = %s%s + %s\n",string_fator,string_p,string_fn);
-  printf("     = c%s - (%s%s - %s) <- desejado - residual\n",string_p,string_fator,string_p,string_fn);
+  sprintf(string_residual,"(%s%s - %s)",string_fator,string_p,string_fn); 
+  printf("     = c%s - %s <- desejado - residual\n",string_p,string_residual);
   printf("     <= c%s <- desejado\n",string_p);
   switch(c)
   {
     case O:
-      do_O(OK,b,string_p,string_fn);
+      do_O(OK,_fator,string_residual);
       break;
     case OMEGA:
-      do_OMEGA(OK,b,string_p,string_fn);
+      do_OMEGA(OK,_fator,string_residual);
       break;
     case TETA:
-      do_O(OK,b,string_p,string_fn);
-      do_OMEGA(OK,b,string_p,string_fn);
+      do_O(OK,_fator,string_residual);
+      do_OMEGA(OK,_fator,string_residual);
       break;
     default:
       printf("undefined\n");
@@ -132,23 +157,23 @@ void get_polinomio(char* buffer, int expoente)
   }
 }
 
-void get_fator(char* buffer, float fator)
+void get_fator(frac *_fator,char* buffer, float fator)
 {
-  frac _fator = to_frac(fator,10);
-  switch(_fator.num)
+  *_fator = to_frac(fator,10);
+  switch(_fator->num)
   {
     case 1:
-      if(_fator.denom==1)
+      if(_fator->denom==1)
       {
         strcpy(buffer,"c");
       }
       else
       {
-      	sprintf(buffer, "(c/%d)",_fator.denom);
+      	sprintf(buffer, "(c/%d)",_fator->denom);
       }
       break;
     default:
-      sprintf(buffer, "(c*%d/%d)",_fator.num,_fator.denom);
+      sprintf(buffer, "(c*%d/%d)",_fator->num,_fator->denom);
       break;
   }
 }
@@ -176,7 +201,7 @@ int main(int argc, char *argv[])
     c = TETA;
   if( p==fn )
     OK = TETA; //TETA OK
-  else if (p>=fn)
+  else if (p>fn)
     OK = O; //O OK
   else
     OK = OMEGA; //OMEGA OK
